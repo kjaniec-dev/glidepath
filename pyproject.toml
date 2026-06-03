@@ -1,0 +1,30 @@
+[project]
+name = "glidepath-workspace"
+version = "0.1.0"
+description = "Glidepath — Monte Carlo retirement simulator (monorepo root)"
+requires-python = ">=3.11"
+readme = "README.md"
+
+# This root project is just the workspace anchor; real code lives in members below.
+dependencies = []
+
+[tool.uv.workspace]
+members = ["packages/*", "apps/*"]
+
+[tool.uv.sources]
+glidepath-core = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "ipykernel>=6.29",
+    "nbconvert>=7.16",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["packages/core/tests"]

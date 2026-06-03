@@ -1,0 +1,12 @@
+[project]
+name = "glidepath-sim"
+version = "0.1.0"
+description = "Streamlit Monte Carlo retirement simulator — interactive demo on top of glidepath-core."
+requires-python = ">=3.11"
+dependencies = [
+    "glidepath-core[viz]",
+    "streamlit>=1.36",
+]
+
+[tool.uv.sources]
+glidepath-core = { workspace = true }
