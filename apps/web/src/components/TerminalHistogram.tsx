@@ -1,7 +1,7 @@
 import { Bar, BarChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { Histogram } from "../types";
 import { fmtCompact, fmtCurrency } from "../api";
-import { bandFill, GRID, MUTED, ACCENT } from "../theme";
+import { ACCENT, BAND_FILL, GRID, MUTED } from "../theme";
 
 interface Props {
   hist: Histogram;
@@ -10,9 +10,8 @@ interface Props {
 }
 
 export default function TerminalHistogram({ hist, medianReal, currency }: Props) {
-  const { bin_edges, counts } = hist;
-  const data = counts.map((count, i) => ({
-    center: (bin_edges[i] + bin_edges[i + 1]) / 2,
+  const data = hist.counts.map((count, i) => ({
+    center: (hist.bin_edges[i] + hist.bin_edges[i + 1]) / 2,
     count,
   }));
 
@@ -30,9 +29,15 @@ export default function TerminalHistogram({ hist, medianReal, currency }: Props)
         <Tooltip
           formatter={(v: number) => [`${v} paths`, "Count"]}
           labelFormatter={(c) => `≈ ${fmtCurrency(c as number, currency)}`}
-          contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
+          contentStyle={{
+            borderRadius: "var(--kj-radius-md)",
+            border: "1px solid var(--kj-border)",
+            background: "var(--kj-card)",
+            color: "var(--kj-card-foreground)",
+            fontSize: 12,
+          }}
         />
-        <Bar dataKey="count" fill={bandFill(0.55)} isAnimationActive={false} />
+        <Bar dataKey="count" fill={BAND_FILL} fillOpacity={0.6} isAnimationActive={false} />
         <ReferenceLine
           x={medianReal}
           stroke={ACCENT}

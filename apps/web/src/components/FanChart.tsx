@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import type { Bands } from "../types";
 import { fmtCompact, fmtCurrency } from "../api";
-import { ACCENT, bandFill, GRID, MUTED } from "../theme";
+import { ACCENT, BAND_FILL, GRID, MUTED } from "../theme";
 
 interface Props {
   ages: number[];
@@ -19,18 +19,11 @@ interface Props {
   currency: string;
 }
 
-interface Row {
-  age: number;
-  band90: [number, number];
-  band50: [number, number];
-  median: number;
-}
-
 export default function FanChart({ ages, bands, retirementAge, currency }: Props) {
-  const data: Row[] = ages.map((age, i) => ({
+  const data = ages.map((age, i) => ({
     age,
-    band90: [bands.p10[i], bands.p90[i]],
-    band50: [bands.p25[i], bands.p75[i]],
+    band90: [bands.p10[i], bands.p90[i]] as [number, number],
+    band50: [bands.p25[i], bands.p75[i]] as [number, number],
     median: bands.p50[i],
   }));
 
@@ -53,26 +46,33 @@ export default function FanChart({ ages, bands, retirementAge, currency }: Props
         />
         <Tooltip
           formatter={(value: number | [number, number], name) => {
-            if (Array.isArray(value)) {
+            if (Array.isArray(value))
               return [`${fmtCurrency(value[0], currency)} – ${fmtCurrency(value[1], currency)}`, name];
-            }
             return [fmtCurrency(value as number, currency), name];
           }}
           labelFormatter={(age) => `Age ${age}`}
-          contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
+          contentStyle={{
+            borderRadius: "var(--kj-radius-md)",
+            border: "1px solid var(--kj-border)",
+            background: "var(--kj-card)",
+            color: "var(--kj-card-foreground)",
+            fontSize: 12,
+          }}
         />
         <Area
           dataKey="band90"
           name="P10–P90"
           stroke="none"
-          fill={bandFill(0.12)}
+          fill={BAND_FILL}
+          fillOpacity={0.12}
           isAnimationActive={false}
         />
         <Area
           dataKey="band50"
           name="P25–P75"
           stroke="none"
-          fill={bandFill(0.24)}
+          fill={BAND_FILL}
+          fillOpacity={0.24}
           isAnimationActive={false}
         />
         <Line

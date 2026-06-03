@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ACCENT, bandFill, GRID, MUTED } from "../theme";
+import { ACCENT, BAND_FILL, GRID, MUTED } from "../theme";
 
 interface Props {
   ages: number[];
@@ -38,10 +38,32 @@ export default function GlidepathChart({ ages, equityWeights, retirementAge }: P
         <Tooltip
           formatter={(v: number, name) => [`${v}%`, name]}
           labelFormatter={(age) => `Age ${age}`}
-          contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
+          contentStyle={{
+            borderRadius: "var(--kj-radius-md)",
+            border: "1px solid var(--kj-border)",
+            background: "var(--kj-card)",
+            color: "var(--kj-card-foreground)",
+            fontSize: 12,
+          }}
         />
-        <Area dataKey="equity" name="Equity" stroke={ACCENT} strokeWidth={2.5} fill={bandFill(0.12)} isAnimationActive={false} />
-        <Line dataKey="bonds" name="Bonds" stroke={MUTED} strokeWidth={2} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+        <Area
+          dataKey="equity"
+          name="Equity"
+          stroke={ACCENT}
+          strokeWidth={2.5}
+          fill={BAND_FILL}
+          fillOpacity={0.12}
+          isAnimationActive={false}
+        />
+        <Line
+          dataKey="bonds"
+          name="Bonds"
+          stroke={MUTED}
+          strokeWidth={2}
+          strokeDasharray="4 3"
+          dot={false}
+          isAnimationActive={false}
+        />
         <ReferenceLine x={retirementAge} stroke={MUTED} strokeDasharray="4 4" />
       </ComposedChart>
     </ResponsiveContainer>

@@ -1,17 +1,13 @@
 import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
+import { gaugeColor } from "../theme";
 
 interface Props {
-  probability: number; // 0..1
-}
-
-function color(pct: number): string {
-  if (pct >= 85) return "#0f766e";
-  if (pct >= 65) return "#d97706";
-  return "#dc2626";
+  probability: number;
 }
 
 export default function SuccessGauge({ probability }: Props) {
   const pct = Math.round(probability * 100);
+  const color = gaugeColor(pct);
   const data = [{ name: "success", value: pct }];
 
   return (
@@ -27,10 +23,10 @@ export default function SuccessGauge({ probability }: Props) {
         >
           <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
           <RadialBar
-            background={{ fill: "rgba(148,163,184,0.18)" }}
+            background={{ fill: "var(--kj-muted)" }}
             dataKey="value"
             cornerRadius={10}
-            fill={color(pct)}
+            fill={color}
             isAnimationActive={false}
           />
         </RadialBarChart>
@@ -47,10 +43,8 @@ export default function SuccessGauge({ probability }: Props) {
           pointerEvents: "none",
         }}
       >
-        <div style={{ fontSize: 40, fontWeight: 700, color: color(pct), letterSpacing: "-0.02em" }}>
-          {pct}%
-        </div>
-        <div style={{ fontSize: 12, color: "#64748b" }}>money lasts</div>
+        <div style={{ fontSize: 40, fontWeight: 700, color, letterSpacing: "-0.02em" }}>{pct}%</div>
+        <div style={{ fontSize: 12, color: "var(--kj-muted-foreground)" }}>money lasts</div>
       </div>
     </div>
   );

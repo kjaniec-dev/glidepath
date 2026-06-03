@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Card, CardContent, Stat, Switch } from "@kjaniec-dev/ui";
 import Controls from "./components/Controls";
 import FanChart from "./components/FanChart";
 import GlidepathChart from "./components/GlidepathChart";
@@ -6,6 +7,7 @@ import SuccessGauge from "./components/SuccessGauge";
 import TerminalHistogram from "./components/TerminalHistogram";
 import { simulate, fmtCurrency } from "./api";
 import { DEFAULT_REQUEST, type SimulateRequest, type SimulateResponse } from "./types";
+import { useTheme } from "./hooks/useTheme";
 
 function clampTimeline(req: SimulateRequest): SimulateRequest {
   const retirement_age = Math.max(req.start_age + 1, Math.min(req.retirement_age, 75));
@@ -21,6 +23,7 @@ export default function App() {
   const [real, setReal] = useState(true);
   const [currency, setCurrency] = useState("zł ");
   const reqId = useRef(0);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const onChange = (patch: Partial<SimulateRequest>) =>
     setReq((prev) => clampTimeline({ ...prev, ...patch }));
@@ -67,20 +70,36 @@ export default function App() {
         </div>
 
         <div className="toolbar">
-          <label className="toggle">
-            <input type="checkbox" checked={real} onChange={(e) => setReal(e.target.checked)} />
-            Show in today&apos;s money (real)
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--kj-muted-foreground)", cursor: "pointer" }}>
+            <Switch checked={real} onChange={(e) => setReal(e.target.checked)} />
+            Today's money (real)
           </label>
-          <label className="toggle">
+
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--kj-muted-foreground)" }}>
             Currency
             <input
               type="text"
               value={currency}
               maxLength={4}
-              style={{ width: 56, padding: "4px 6px" }}
+              style={{
+                width: 56,
+                padding: "4px 6px",
+                border: "1px solid var(--kj-border)",
+                borderRadius: "var(--kj-radius-sm)",
+                background: "var(--kj-surface)",
+                color: "var(--kj-foreground)",
+                fontSize: 13,
+                fontFamily: "var(--kj-font-sans)",
+              }}
               onChange={(e) => setCurrency(e.target.value)}
             />
           </label>
+
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--kj-muted-foreground)", cursor: "pointer" }}>
+            <Switch checked={theme === "dark"} onChange={toggleTheme} />
+            Dark mode
+          </label>
+
           {res && (
             <span className="runinfo">
               {res.n_paths.toLocaleString("en-US")} paths · {res.elapsed_ms} ms
@@ -89,72 +108,84 @@ export default function App() {
           )}
         </div>
 
-        {error && <div className="banner">API error: {error}. Is the FastAPI service running?</div>}
+        {error && (
+          <div className="banner">
+            API error: {error}. Is the FastAPI service running?
+          </div>
+        )}
 
         {res && bands && (
           <>
             <div className="metrics">
-              <div className="metric">
-                <div className="k">Money lasts</div>
-                <div className="v">{Math.round(res.summary.success_probability * 100)}%</div>
-              </div>
-              <div className="metric">
-                <div className="k">Median end wealth (real)</div>
-                <div className="v">{fmtCurrency(res.summary.median_terminal_real, currency)}</div>
-              </div>
-              <div className="metric">
-                <div className="k">Pessimistic (P10, real)</div>
-                <div className="v">{fmtCurrency(res.summary.p10_terminal_real, currency)}</div>
-              </div>
-              <div className="metric">
-                <div className="k">Median ruin age</div>
-                <div className="v">
-                  {res.summary.median_depletion_age === null
+              <Stat
+                label="Money lasts"
+                value={`${Math.round(res.summary.success_probability * 100)}%`}
+              />
+              <Stat
+                label="Median end wealth (real)"
+                value={fmtCurrency(res.summary.median_terminal_real, currency)}
+              />
+              <Stat
+                label="Pessimistic P10 (real)"
+                value={fmtCurrency(res.summary.p10_terminal_real, currency)}
+              />
+              <Stat
+                label="Median ruin age"
+                value={
+                  res.summary.median_depletion_age === null
                     ? "—"
-                    : Math.round(res.summary.median_depletion_age)}
-                </div>
-              </div>
+                    : String(Math.round(res.summary.median_depletion_age))
+                }
+              />
             </div>
 
-            <div className="grid">
-              <div className="card">
-                <h3>Portfolio value — {real ? "real (today's money)" : "nominal"}</h3>
-                <p className="sub">Median with P25–P75 and P10–P90 bands</p>
-                <FanChart
-                  ages={res.ages}
-                  bands={bands}
-                  retirementAge={res.retirement_age}
-                  currency={currency}
-                />
-              </div>
-              <div className="card">
-                <h3>Probability money lasts</h3>
-                <p className="sub">Share of paths solvent through retirement</p>
-                <SuccessGauge probability={res.summary.success_probability} />
-              </div>
-              <div className="card">
-                <h3>Glidepath — allocation over time</h3>
-                <p className="sub">Equity share gliding toward bonds</p>
-                <GlidepathChart
-                  ages={res.ages}
-                  equityWeights={res.equity_weights}
-                  retirementAge={res.retirement_age}
-                />
-              </div>
-              <div className="card">
-                <h3>Terminal wealth — real</h3>
-                <p className="sub">Distribution of end-of-horizon balances</p>
-                <TerminalHistogram
-                  hist={res.terminal_real_hist}
-                  medianReal={res.summary.median_terminal_real}
-                  currency={currency}
-                />
-              </div>
+            <div className="charts-grid">
+              <Card>
+                <CardContent>
+                  <div className="chart-card-content">
+                    <h3>Portfolio value — {real ? "real (today's money)" : "nominal"}</h3>
+                    <p className="sub">Median with P25–P75 and P10–P90 bands</p>
+                    <FanChart ages={res.ages} bands={bands} retirementAge={res.retirement_age} currency={currency} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent>
+                  <div className="chart-card-content">
+                    <h3>Probability money lasts</h3>
+                    <p className="sub">Share of paths solvent through retirement</p>
+                    <SuccessGauge probability={res.summary.success_probability} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent>
+                  <div className="chart-card-content">
+                    <h3>Glidepath — allocation over time</h3>
+                    <p className="sub">Equity share gliding toward bonds</p>
+                    <GlidepathChart ages={res.ages} equityWeights={res.equity_weights} retirementAge={res.retirement_age} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent>
+                  <div className="chart-card-content">
+                    <h3>Terminal wealth — real</h3>
+                    <p className="sub">Distribution of end-of-horizon balances</p>
+                    <TerminalHistogram hist={res.terminal_real_hist} medianReal={res.summary.median_terminal_real} currency={currency} />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </>
         )}
 
-        {!res && !error && <p style={{ color: "#64748b" }}>Running first simulation…</p>}
+        {!res && !error && (
+          <p style={{ color: "var(--kj-muted-foreground)" }}>Running first simulation…</p>
+        )}
 
         <p className="footnote">
           Educational model, not financial advice. Two-asset (equity/bonds) world, normal annual
