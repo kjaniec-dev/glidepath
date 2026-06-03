@@ -6,6 +6,7 @@ the maths lives in ``glidepath-core``; this module just adapts it to HTTP/JSON.
 
 from __future__ import annotations
 
+import os
 import time
 
 import numpy as np
@@ -22,11 +23,15 @@ app = FastAPI(
     summary="Stateless Monte Carlo retirement projection.",
 )
 
-# Permissive CORS: this is a public, read-only demo endpoint (no cookies/auth),
-# consumed by the React client in dev (localhost) and on Netlify.
+# ALLOWED_ORIGINS env var: comma-separated list of allowed origins.
+# Defaults to "*" (open) which is fine for a public read-only demo endpoint.
+# Set e.g. ALLOWED_ORIGINS="https://glidepath.netlify.app" in production.
+_raw_origins = os.environ.get("ALLOWED_ORIGINS", "*")
+_origins: list[str] | str = [o.strip() for o in _raw_origins.split(",")] if _raw_origins != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )

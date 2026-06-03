@@ -27,21 +27,27 @@ export default function App() {
 
   useEffect(() => {
     const id = ++reqId.current;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const data = await simulate(req);
+        const data = await simulate(req, controller.signal);
         if (id === reqId.current) {
           setRes(data);
           setError(null);
         }
       } catch (e) {
-        if (id === reqId.current) setError(e instanceof Error ? e.message : String(e));
+        if (id === reqId.current && !(e instanceof DOMException && e.name === "AbortError")) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
       } finally {
         if (id === reqId.current) setLoading(false);
       }
     }, 250);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [req]);
 
   const bands = useMemo(() => (res ? (real ? res.real : res.nominal) : null), [res, real]);

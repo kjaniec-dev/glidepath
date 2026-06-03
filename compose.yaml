@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Narrow this to your front-end domain in production.
+      ALLOWED_ORIGINS: "*"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Empty = relative paths; nginx proxy handles /simulate → api.
+        VITE_API_URL: ""
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy

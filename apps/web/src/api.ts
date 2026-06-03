@@ -1,12 +1,15 @@
 import type { SimulateRequest, SimulateResponse } from "./types";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+// Empty string = relative paths (used in Docker behind nginx reverse proxy).
+// Set VITE_API_URL=http://localhost:8000 for local dev without nginx.
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
-export async function simulate(req: SimulateRequest): Promise<SimulateResponse> {
+export async function simulate(req: SimulateRequest, signal?: AbortSignal): Promise<SimulateResponse> {
   const res = await fetch(`${API_URL}/simulate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
+    signal,
   });
   if (!res.ok) {
     let detail = `${res.status} ${res.statusText}`;
