@@ -1,0 +1,13 @@
+[build]
+  base = "apps/web"
+  command = "npm run build"
+  publish = "dist"
+
+# SPA fallback so client-side routing (if added) doesn't 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Set VITE_API_URL in the Netlify UI (Site settings → Environment) to the
+# deployed FastAPI base URL. It is read at build time.

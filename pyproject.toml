@@ -9,7 +9,8 @@ readme = "README.md"
 dependencies = []
 
 [tool.uv.workspace]
-members = ["packages/*", "apps/*"]
+# Python members only; apps/web is a Node (Vite) project, not a uv member.
+members = ["packages/core", "apps/sim", "apps/api"]
 
 [tool.uv.sources]
 glidepath-core = { workspace = true }
@@ -27,4 +28,4 @@ line-length = 100
 target-version = "py311"
 
 [tool.pytest.ini_options]
-testpaths = ["packages/core/tests"]
+testpaths = ["packages/core/tests", "apps/api/tests"]

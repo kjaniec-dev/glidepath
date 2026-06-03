@@ -19,5 +19,9 @@ dist/
 .ipynb_checkpoints/
 .ipython_tmp/
 
+# Node
+apps/web/node_modules/
+apps/web/dist/
+
 # OS
 .DS_Store
