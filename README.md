@@ -65,6 +65,29 @@ uv run --package glidepath-sim streamlit run apps/sim/app.py
 uv run --with jupyterlab jupyter lab notebooks/demo.ipynb
 ```
 
+### Run the full stack (Docker Compose)
+
+```bash
+docker compose up --build
+```
+
+| URL | What |
+| -------------------------- | --------------------------------------- |
+| `http://localhost` | React + Recharts front |
+| `http://localhost/docs` | FastAPI interactive docs (Swagger UI) |
+| `http://localhost/redoc` | ReDoc API reference |
+| `http://localhost/simulate`| `POST /simulate` endpoint (proxied) |
+
+The React app sends all API calls through the Nginx reverse proxy, so no CORS
+configuration is needed in development or production.
+
+### Run the API only
+
+```bash
+uv run --package glidepath-api uvicorn glidepath_api.main:app --reload
+# then open http://localhost:8000/docs
+```
+
 ### Use the core directly
 
 ```python
@@ -89,7 +112,7 @@ stateless `POST /simulate`. Same maths everywhere, written once.
 ## Roadmap
 
 - **Phase 1 (done):** core engine + tests, Streamlit + Plotly demo, notebook.
-- **Phase 2:** FastAPI `POST /simulate`, React + Recharts front (Netlify).
+- **Phase 2 (done):** FastAPI `POST /simulate`, React + Recharts front, Docker Compose, presets & scenario comparison.
 - **Later:** historical block-bootstrap returns, multi-asset, tax-account wrappers (kept generic).
 
 ## License

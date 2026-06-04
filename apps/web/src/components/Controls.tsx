@@ -1,5 +1,6 @@
 import { Field, Input, Label, Select, Slider, sliderThumbCSS } from "@kjaniec-dev/ui";
 import type { GlidepathStyle, SimulateRequest } from "../types";
+import { PRESETS } from "../presets";
 
 // Inject slider thumb styles once (replaces the hand-rolled accent-color approach).
 if (typeof document !== "undefined") {
@@ -15,6 +16,9 @@ if (typeof document !== "undefined") {
 interface Props {
   req: SimulateRequest;
   onChange: (patch: Partial<SimulateRequest>) => void;
+  onLoadPreset: (req: SimulateRequest) => void;
+  compareLabel: string | null;
+  onCompareChange: (label: string | null) => void;
 }
 
 function SliderField(props: {
@@ -67,7 +71,7 @@ function NumberField(props: {
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
-export default function Controls({ req, onChange }: Props) {
+export default function Controls({ req, onChange, onLoadPreset, compareLabel, onCompareChange }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -78,6 +82,41 @@ export default function Controls({ req, onChange }: Props) {
         Generic Monte Carlo retirement projection. Plug in your own ETF / IKZE numbers — nothing
         account-specific or tax-related baked in.
       </p>
+
+      <fieldset className="group">
+        <legend>Presets &amp; comparison</legend>
+        <Field className="field-row">
+          <Label className="field-label">Load preset</Label>
+          <Select
+            value=""
+            onChange={(e) => {
+              const preset = PRESETS.find((p) => p.label === e.target.value);
+              if (preset) onLoadPreset(preset.req);
+            }}
+          >
+            <option value="" disabled>Choose…</option>
+            {PRESETS.map((p) => (
+              <option key={p.label} value={p.label} title={p.description}>
+                {p.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field className="field-row">
+          <Label className="field-label">Compare with</Label>
+          <Select
+            value={compareLabel ?? ""}
+            onChange={(e) => onCompareChange(e.target.value || null)}
+          >
+            <option value="">— none —</option>
+            {PRESETS.map((p) => (
+              <option key={p.label} value={p.label}>
+                {p.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </fieldset>
 
       <fieldset className="group">
         <legend>Timeline &amp; cashflows</legend>

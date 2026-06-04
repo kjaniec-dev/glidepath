@@ -7,6 +7,7 @@ export const ACCENT_STRONG = "var(--kj-secondary-700)"; // median line (always r
 export const MUTED = "var(--kj-muted-foreground)";
 export const GRID = "var(--kj-border)";
 export const BAND_FILL = "var(--kj-secondary)";     // used with fillOpacity={0.12 | 0.22}
+export const COMPARE_COLOR = "var(--kj-primary)";  // amber — compare scenario median
 
 // Gauge colours: match KJ semantic tokens.
 export function gaugeColor(pct: number): string {

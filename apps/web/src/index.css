@@ -169,6 +169,19 @@
   margin: 0 0 8px;
 }
 
+.compare-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--kj-foreground);
+  background: color-mix(in srgb, var(--kj-primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--kj-primary) 30%, transparent);
+  border-radius: var(--kj-radius-md);
+  padding: 8px 14px;
+  margin-bottom: 12px;
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
