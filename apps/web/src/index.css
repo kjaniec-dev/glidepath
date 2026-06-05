@@ -2,6 +2,11 @@
 @import "@kjaniec-dev/design/tailwind.css";
 @import "@kjaniec-dev/ui/ui.css";
 
+/* Tell Tailwind to scan the UI component package so its classes aren't purged */
+@source "../node_modules/@kjaniec-dev/ui/dist/**/*.{js,cjs}";
+@source "../../../node_modules/@kjaniec-dev/ui/dist/**/*.{js,cjs}";
+
+
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 
 .layout {
