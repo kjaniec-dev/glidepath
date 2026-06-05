@@ -1,0 +1,130 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-push-docker:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: actions/docker-setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: actions/docker-setup-buildx-action@v3
+
+      # Login to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Authenticate to Google Cloud using WIF
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # Login to Google Artifact Registry using short-lived access token
+      - name: Log in to Google Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: us-central1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      # Build and Push Backend (to both Docker Hub and Google Artifact Registry)
+      - name: Build & Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            kjaniec/glidepath-api:latest
+            kjaniec/glidepath-api:${{ github.sha }}
+            us-central1-docker.pkg.dev/glidepath-498512/glidepath/api:latest
+            us-central1-docker.pkg.dev/glidepath-498512/glidepath/api:${{ github.sha }}
+
+      # Build and Push Frontend to Docker Hub
+      - name: Build & Push Frontend to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: |
+            kjaniec/glidepath-web:latest
+            kjaniec/glidepath-web:${{ github.sha }}
+
+  deploy-backend:
+    name: Deploy Backend to Cloud Run
+    needs: build-and-push-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud using WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: glidepath-api
+          image: us-central1-docker.pkg.dev/glidepath-498512/glidepath/api:${{ github.sha }}
+          region: us-central1
+          flags: --allow-unauthenticated
+
+
+  deploy-frontend:
+    name: Deploy Frontend to Firebase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Build Frontend
+        run: |
+          cd apps/web
+          npm run build
+
+      - name: Authenticate to Google Cloud using WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+      - name: Deploy to Firebase Hosting
+        run: |
+          npx --package firebase-tools firebase deploy --only hosting --project glidepath-2f561
+

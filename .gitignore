@@ -25,3 +25,8 @@ apps/web/dist/
 
 # OS
 .DS_Store
+
+# Firebase
+.firebase/
+firebase-debug.log
+*.log
