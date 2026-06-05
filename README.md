@@ -24,6 +24,12 @@ presentation layer over it — so the simulation logic is written and tested onc
 then reused by the Streamlit demo today and (Phase 2) a FastAPI service + React
 front and a CLI rebalancer.
 
+## UI Preview
+
+| Light Mode | Dark Mode |
+| --- | --- |
+| ![Light Mode](assets/screenshot_light.png) | ![Dark Mode](assets/screenshot_dark.png) |
+
 ## What it models
 
 - **Two-asset** (equity / bonds) world with correlated nominal returns.
