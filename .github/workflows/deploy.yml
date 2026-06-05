@@ -127,6 +127,9 @@ jobs:
           create_credentials_file: true
 
       - name: Deploy to Firebase Hosting
+        env:
+          FIREBASE_DEBUG: "true"
         run: |
           npx --package firebase-tools firebase deploy --only hosting --project glidepath-2f561
+
 
