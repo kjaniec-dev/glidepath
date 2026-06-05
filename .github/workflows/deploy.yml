@@ -115,9 +115,12 @@ jobs:
           npm ci
 
       - name: Build Frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: |
           cd apps/web
           npm run build
+
 
       - name: Authenticate to Google Cloud using WIF
         uses: google-github-actions/auth@v2
