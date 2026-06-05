@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import os
 import time
+from collections import defaultdict
 
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from glidepath import percentile_bands, simulate, summarize, terminal_wealth
 
@@ -23,10 +25,46 @@ app = FastAPI(
     summary="Stateless Monte Carlo retirement projection.",
 )
 
-# ALLOWED_ORIGINS env var: comma-separated list of allowed origins.
-# Defaults to "*" (open) which is fine for a public read-only demo endpoint.
-# Set e.g. ALLOWED_ORIGINS="https://glidepath.netlify.app" in production.
-_raw_origins = os.environ.get("ALLOWED_ORIGINS", "*")
+# Simple in-memory rate limiting: max 100 requests per minute per client IP.
+RATE_LIMIT_REQUESTS = 100
+RATE_LIMIT_WINDOW = 60  # seconds
+
+# Maps client IP -> list of request timestamps
+_request_history: dict[str, list[float]] = defaultdict(list)
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    # Only rate limit the /simulate endpoint
+    if request.url.path == "/simulate" and request.method == "POST":
+        # Extract IP from X-Forwarded-For (Google Cloud Run load balancer proxy header)
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+        else:
+            client_ip = request.client.host if request.client else "unknown"
+
+        now = time.time()
+
+        # Clean up timestamps older than the window
+        history = _request_history[client_ip]
+        history = [t for t in history if now - t < RATE_LIMIT_WINDOW]
+        _request_history[client_ip] = history
+
+        if len(history) >= RATE_LIMIT_REQUESTS:
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={"detail": "Too many requests. Rate limit is 100 requests per minute."},
+            )
+
+        history.append(now)
+
+    return await call_next(request)
+
+
+# ALLOWED_ORIGINS defaults to your production subdomain.
+_default_origins = "https://glidepath.kjaniec.dev"
+_raw_origins = os.environ.get("ALLOWED_ORIGINS", _default_origins)
 _origins: list[str] | str = [o.strip() for o in _raw_origins.split(",")] if _raw_origins != "*" else ["*"]
 
 app.add_middleware(
@@ -35,6 +73,8 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
 
 
 def _bands(balances: np.ndarray) -> Bands:

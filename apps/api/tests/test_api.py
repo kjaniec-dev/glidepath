@@ -48,3 +48,46 @@ def test_out_of_range_field_is_422():
     # n_paths above the cap is rejected by pydantic before reaching the core.
     r = client.post("/simulate", json={"n_paths": 10_000_000})
     assert r.status_code == 422
+
+
+def test_rate_limiter_and_cors():
+    from glidepath_api import main as api_main
+    
+    # Save original values
+    orig_requests = api_main.RATE_LIMIT_REQUESTS
+    orig_origins = api_main._origins
+    
+    try:
+        # Mock rate limit and allowed origins for testing
+        api_main.RATE_LIMIT_REQUESTS = 3
+        api_main._origins = ["https://glidepath.kjaniec.dev"]
+        
+        # Clear request history to start fresh
+        api_main._request_history.clear()
+        
+        # Make requests from the allowed origin
+        headers = {"Origin": "https://glidepath.kjaniec.dev"}
+        
+        # First 3 requests should succeed (200 OK)
+        for _ in range(3):
+            r = client.post("/simulate", json={"n_paths": 10}, headers=headers)
+            assert r.status_code == 200
+            assert r.headers.get("access-control-allow-origin") == "https://glidepath.kjaniec.dev"
+            
+        # The 4th request should fail with 429
+        r = client.post("/simulate", json={"n_paths": 10}, headers=headers)
+        assert r.status_code == 429
+        # Critically, check that CORS headers are still present on the 429 response
+        assert r.headers.get("access-control-allow-origin") == "https://glidepath.kjaniec.dev"
+        assert r.json() == {"detail": "Too many requests. Rate limit is 100 requests per minute."}
+        
+        # Request from an unauthorized origin should not have the Access-Control-Allow-Origin header
+        r = client.post("/simulate", json={"n_paths": 10}, headers={"Origin": "https://malicious.com"})
+        assert r.headers.get("access-control-allow-origin") is None
+        
+    finally:
+        # Restore original values
+        api_main.RATE_LIMIT_REQUESTS = orig_requests
+        api_main._origins = orig_origins
+        api_main._request_history.clear()
+

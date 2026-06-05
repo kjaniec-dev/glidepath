@@ -20,8 +20,10 @@ dist/
 .ipython_tmp/
 
 # Node
+node_modules/
 apps/web/node_modules/
 apps/web/dist/
+
 
 # OS
 .DS_Store
