@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Card, CardContent, Stat, Switch } from "@kjaniec-dev/ui";
+import { Card, CardContent, MetricCard, Switch, Drawer, Button, Skeleton, Spinner } from "@kjaniec-dev/ui";
 import Controls from "./components/Controls";
 import FanChart from "./components/FanChart";
 import GlidepathChart from "./components/GlidepathChart";
@@ -41,6 +41,8 @@ export default function App() {
   const [compareLabel, setCompareLabel] = useState<string | null>(null);
   const [compareRes, setCompareRes] = useState<SimulateResponse | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+
+  const [controlsOpen, setControlsOpen] = useState(false);
 
   const [real, setReal] = useState(true);
   const [currency, setCurrency] = useState("zł ");
@@ -116,25 +118,58 @@ export default function App() {
 
   return (
     <div className="layout">
-      <Controls
-        req={req}
-        onChange={onChange}
-        onLoadPreset={onLoadPreset}
-        compareLabel={compareLabel}
-        onCompareChange={(label) => {
-          setCompareLabel(label);
-          if (!label) setCompareRes(null);
-        }}
-      />
+      {loading && <div className="loading-bar" />}
 
-      <main className="main">
+      <Drawer
+        open={controlsOpen}
+        onClose={() => setControlsOpen(false)}
+        title="Simulation Settings"
+        description="Configure inputs for the Monte Carlo simulator. Changes apply after a short debounce."
+        side="left"
+        width="max-w-sm"
+      >
+        <Controls
+          req={req}
+          onChange={onChange}
+          onLoadPreset={onLoadPreset}
+          compareLabel={compareLabel}
+          onCompareChange={(label) => {
+            setCompareLabel(label);
+            if (!label) setCompareRes(null);
+          }}
+        />
+      </Drawer>
+
+      <main className={`main ${loading && res ? "main-loading" : ""}`}>
         <div className="header">
-          <h2>Retirement Monte Carlo</h2>
-          <p>
-            Thousands of randomized return &amp; inflation paths through your glidepath. The bands
-            show the spread of outcomes; the middle line is the median. Everything is computed by a
-            stateless Python <code>POST /simulate</code> — the front never re-implements the maths.
-          </p>
+          <div className="header-info">
+            <h2>Retirement Monte Carlo</h2>
+            <p>
+              Thousands of randomized return &amp; inflation paths through your glidepath. The bands
+              show the spread of outcomes; the middle line is the median. Everything is computed by a
+              stateless Python <code>POST /simulate</code> — the front never re-implements the maths.
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            onClick={() => setControlsOpen(true)}
+            style={{ flexShrink: 0 }}
+            leadingIcon={
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="21" x2="4" y2="14" />
+                <line x1="4" y1="10" x2="4" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12" y2="3" />
+                <line x1="20" y1="21" x2="20" y2="16" />
+                <line x1="20" y1="12" x2="20" y2="3" />
+                <line x1="1" y1="14" x2="7" y2="14" />
+                <line x1="9" y1="8" x2="15" y2="8" />
+                <line x1="17" y1="16" x2="23" y2="16" />
+              </svg>
+            }
+          >
+            Configure
+          </Button>
         </div>
 
         <div className="toolbar">
@@ -169,9 +204,9 @@ export default function App() {
           </label>
 
           {res && (
-            <span className="runinfo">
+            <span className="runinfo" style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {res.n_paths.toLocaleString("en-US")} paths · {res.elapsed_ms} ms
-              {loading ? " · updating…" : ""}
+              {loading && <span className="inline-flex items-center text-primary"><Spinner size={12} style={{ marginRight: 4 }} /> updating…</span>}
               {compareLoading ? " · compare…" : ""}
             </span>
           )}
@@ -210,44 +245,44 @@ export default function App() {
             )}
 
             <div className="metrics">
-              <Stat
-                label="Money lasts"
+              <MetricCard
+                title="Money lasts"
                 value={`${mainPct}%`}
                 {...(compareRes && comparePct !== null && mainPct !== null ? {
-                  delta: `${pctDelta(mainPct / 100, comparePct / 100)} vs ${compareLabel}`,
-                  trend: deltaTrend(mainPct, comparePct),
+                  trend: `${pctDelta(mainPct / 100, comparePct / 100)} vs ${compareLabel}`,
+                  trendDirection: deltaTrend(mainPct, comparePct) ?? "neutral",
                 } : {})}
               />
-              <Stat
-                label="Median end wealth (real)"
+              <MetricCard
+                title="Median end wealth (real)"
                 value={fmtCurrency(res.summary.median_terminal_real, currency)}
                 {...(compareRes ? {
-                  delta: `${fmtCurrency(
+                  trend: `${fmtCurrency(
                     res.summary.median_terminal_real - compareRes.summary.median_terminal_real,
                     currency,
                   )} vs ${compareLabel}`,
-                  trend: deltaTrend(
+                  trendDirection: deltaTrend(
                     res.summary.median_terminal_real,
                     compareRes.summary.median_terminal_real,
-                  ),
+                  ) ?? "neutral",
                 } : {})}
               />
-              <Stat
-                label="Pessimistic P10 (real)"
+              <MetricCard
+                title="Pessimistic P10 (real)"
                 value={fmtCurrency(res.summary.p10_terminal_real, currency)}
                 {...(compareRes ? {
-                  delta: `${fmtCurrency(
+                  trend: `${fmtCurrency(
                     res.summary.p10_terminal_real - compareRes.summary.p10_terminal_real,
                     currency,
                   )} vs ${compareLabel}`,
-                  trend: deltaTrend(
+                  trendDirection: deltaTrend(
                     res.summary.p10_terminal_real,
                     compareRes.summary.p10_terminal_real,
-                  ),
+                  ) ?? "neutral",
                 } : {})}
               />
-              <Stat
-                label="Median ruin age"
+              <MetricCard
+                title="Median ruin age"
                 value={
                   res.summary.median_depletion_age === null
                     ? "—"
@@ -257,11 +292,11 @@ export default function App() {
                   res.summary.median_depletion_age,
                   compareRes.summary.median_depletion_age,
                 ) ? {
-                  delta: `${ageDelta(res.summary.median_depletion_age, compareRes.summary.median_depletion_age)} vs ${compareLabel}`,
-                  trend: deltaTrend(
+                  trend: `${ageDelta(res.summary.median_depletion_age, compareRes.summary.median_depletion_age)} vs ${compareLabel}`,
+                  trendDirection: deltaTrend(
                     res.summary.median_depletion_age ?? Infinity,
                     compareRes.summary.median_depletion_age ?? Infinity,
-                  ),
+                  ) ?? "neutral",
                 } : {})}
               />
             </div>
@@ -330,8 +365,41 @@ export default function App() {
           </>
         )}
 
-        {!res && !error && (
-          <p style={{ color: "var(--kj-muted-foreground)" }}>Running first simulation…</p>
+        {loading && !res && (
+          <div className="space-y-6" style={{ marginTop: 24 }}>
+            <div className="metrics">
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <Skeleton variant="text" width="60%" height={12} />
+                  </div>
+                  <div className="flex items-baseline gap-2.5">
+                    <Skeleton variant="text" width="45%" height={32} />
+                  </div>
+                </Card>
+              ))}
+            </div>
+            <div className="charts-grid">
+              <Card>
+                <CardContent style={{ padding: "20px 24px" }}>
+                  <Skeleton variant="text" width="30%" height={18} style={{ marginBottom: 6 }} />
+                  <Skeleton variant="text" width="50%" height={14} style={{ marginBottom: 24 }} />
+                  <Skeleton variant="rectangular" height={340} />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent style={{ padding: "20px 24px" }}>
+                  <Skeleton variant="text" width="45%" height={18} style={{ marginBottom: 6 }} />
+                  <Skeleton variant="text" width="35%" height={14} style={{ marginBottom: 24 }} />
+                  <Skeleton variant="rectangular" height={340} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {!res && !loading && !error && (
+          <p style={{ color: "var(--kj-muted-foreground)" }}>Starting simulation…</p>
         )}
 
         <p className="footnote">

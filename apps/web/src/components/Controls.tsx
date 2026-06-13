@@ -73,16 +73,7 @@ const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
 export default function Controls({ req, onChange, onLoadPreset, compareLabel, onCompareChange }: Props) {
   return (
-    <aside className="sidebar">
-      <div className="brand">
-        <span className="dot" />
-        <h1>Glidepath</h1>
-      </div>
-      <p className="tagline">
-        Generic Monte Carlo retirement projection. Plug in your own ETF / IKZE numbers — nothing
-        account-specific or tax-related baked in.
-      </p>
-
+    <div className="space-y-4">
       <fieldset className="group">
         <legend>Presets &amp; comparison</legend>
         <Field className="field-row">
@@ -172,6 +163,6 @@ export default function Controls({ req, onChange, onLoadPreset, compareLabel, on
         </Field>
         <SliderField label="Random seed" value={req.seed} min={0} max={1000} step={1} onChange={(v) => onChange({ seed: v })} />
       </fieldset>
-    </aside>
+    </div>
   );
 }
